@@ -39,3 +39,16 @@ src/autotrader/
 ├── backtest/            합성/분봉 데이터, 결과 요약
 └── app/                 CLI: backtest, live, replay, metrics
 ```
+
+|---|---|---|
+| **동시성·순서 결정론** | `Sequencer`(소스별 seq 빈틈 메우기 + (ts, source, seq) k-way 병합), 엔진은 벽시계·난수 미사용, 상태 해시 | `test_determinism.py`: 무작위 셔플·멀티스레드·asyncio 생산자 모두 동일 해시, 시퀀서 없으면 결과가 달라지는 대조군, 장애 섞인 실행의 저널 리플레이 |
+| **재진입/청산 상태 관리** | `Lifecycle` 상태 머신 + 청산 사유별 쿨다운, 불법 전이는 예외 | `test_edge_cases.py`: 부분 체결 진입, 부분 청산 후 잔량 재시도, 손절 후 30분 재진입 금지 |
+| **엣지 케이스** (부분 체결·타임아웃) | `Order` 상태 머신의 UNKNOWN 상태, 타임아웃 → 조회(재주문 X), 미체결 잔량 자동 취소 | ack 유실, 요청 유실(NOT_FOUND), 거부 백오프, 늦은 체결 |
+| **가격 기준점 명시** | `PriceRef` + `Position.ref_price()` 단일 진입점, `RiskConfig.stop_ref`로 기준 선택 | 분할 체결 시 ENTRY와 AVG 기준 손절 판단이 달라지는 파라미터 테스트, 사이징 = 자본의 1% 리스크 |
+| **중복·오류 주문 방지** | 4중 방어: 라이프사이클 → OrderManager → 거래소 client_id → fill_id 멱등 | 중복 체결 무시, 활성/UNKNOWN 주문 존재 시 생성 거부 |
+| 리스크 관리 | 고정 비율 사이징, 비중 상한, 최소 주문금액, 최대 낙폭 래치 | 낙폭 초과 → 전량 청산 + 신규 진입 중단 |
+| 실시간 파이프라인 | asyncio 생산자 여럿 + 단일 소비자, 백프레셔 큐, 재연결 지수 백오프, 체결 ID 중복 제거 | 업비트 메시지 파싱 테스트 |
+| 모니터링·알림 | Prometheus 메트릭(처리량, 피드 지연, 낙폭, 알림), CRITICAL은 Slack 웹훅 | |
+
+자세한 설계 근거는 [`docs/DESIGN.md`](docs/DESIGN.md), 다음 단계는 [`docs/ROADMAP.md`](docs/ROADMAP.md) 참고
+
