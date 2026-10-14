@@ -2,7 +2,7 @@
 수익률보다 같은 입력이면 항상 같은 결과, 장애 상황에서도 상태가 꼬이지 않음을 증명하는 것을 목표로 한 자동매매 시스템
 업비트 실시간 시세 (공개 API + 키 불필요) + 페이퍼 거래소(모의 체결)로 동작하므로 실제 돈은 나가지 않음
 
-### 빠른 시작
+### 시작
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[live,dev]"
